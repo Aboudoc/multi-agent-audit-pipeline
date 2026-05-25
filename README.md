@@ -1,5 +1,12 @@
 # multi-agent-audit-pipeline
 
+[![CI](https://github.com/Aboudoc/multi-agent-audit-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Aboudoc/multi-agent-audit-pipeline/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+<!-- Demo: record `python run.py examples/Vault.sol` (asciinema -> agg, terminalizer, or vhs) and overwrite docs/demo.gif -->
+<p align="center">
+  <img src="docs/demo.gif" alt="multi-agent-audit-pipeline — run demo" width="720">
+</p>
+
 A tiny, readable **multi-agent Solidity audit pipeline**. An orchestrator fans an
 audit out across a few focused agents — each hunts one bug class — then merges and
 de-duplicates their findings. About 200 lines of Python. No magic: a loop, a few
