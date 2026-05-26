@@ -2,11 +2,12 @@
 pragma solidity ^0.8.20;
 
 /// @notice Intentionally vulnerable example for the demo pipeline.
-/// Contains a textbook reentrancy and a textbook access-control bug.
+/// Contains a reentrancy, an access-control bug, and a cross-function-auth bug.
 /// Do NOT use this anywhere real.
 contract Vault {
     address public owner;
     mapping(address => uint256) public balances;
+    mapping(address => uint256) public debt;
 
     constructor() {
         owner = msg.sender;
@@ -29,6 +30,13 @@ contract Vault {
     // BUG (access control): no owner check — anyone can seize ownership.
     function setOwner(address newOwner) external {
         owner = newOwner;
+    }
+
+    // BUG (cross-function auth): debt is recorded against `onBehalfOf`, but the only
+    // check is on msg.sender's own balance — any funded caller can saddle a victim with debt.
+    function borrowTo(address onBehalfOf, uint256 amount) external {
+        require(balances[msg.sender] >= amount, "caller lacks collateral");
+        debt[onBehalfOf] += amount;
     }
 
     // Note for the integer-overflow agent: this is Solidity 0.8, so the `+` in

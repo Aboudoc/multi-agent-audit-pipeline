@@ -22,10 +22,11 @@ tools, and a PoC step.
 ## How it works
 
 ```
-                         ┌── reentrancy ──── opus ───┐
-   Solidity codebase ──► ├── access-control ─ sonnet ┤ ──► merge + dedup ──► report
-        (one blob)       └── integer-overflow haiku ─┘     (track confirms)
-                         each = 1 focused Claude call, on a model that fits the job
+                        ┌── reentrancy           (opus)   ┐
+   Solidity codebase ──►├── access-control       (sonnet) │
+        (one blob)      ├── cross-function-auth   (opus)  ├──► merge + dedup ──► report
+                        └── integer-overflow      (haiku) ┘     (track confirms)
+                        each = 1 focused Claude call, on a model that fits the job
 ```
 
 - **One job per agent.** A narrow prompt ("hunt only reentrancy") beats one
@@ -56,29 +57,31 @@ export ANTHROPIC_API_KEY=sk-ant-...
 python run.py examples/Vault.sol
 ```
 
-`examples/Vault.sol` ships with a textbook reentrancy and a textbook access-control
-bug — and a clean arithmetic path, so you can watch the overflow agent correctly
-find *nothing* (zero findings is a valid answer).
+`examples/Vault.sol` ships with a reentrancy, an access-control bug, and a
+cross-function-auth bug (debt credited to one address but checked against another) —
+plus a clean arithmetic path, so you can watch the overflow agent correctly find
+*nothing* (zero findings is a valid answer).
 
 By default each agent uses its own model tier. Force one model for all of them
 with `AUDIT_MODEL=claude-haiku-4-5 python run.py examples/Vault.sol` (or `--model`).
 
 ## Add your own agent
 
-The three bundled agents (reentrancy, access-control, integer-overflow) are textbook on
-purpose — they teach the mechanics, not the edge. The leverage is in agents that encode
-*your* expertise, where a generalist prompt loses to you: an accounting-drift agent, a
-first-deposit-inflation agent, a cross-function-auth agent.
+The four bundled agents (reentrancy, access-control, cross-function-auth, integer-overflow)
+are deliberate starters — they teach the mechanics, not the edge. The leverage is in agents
+that encode *your* expertise, where a generalist prompt loses to you: an accounting-drift
+agent, a first-deposit-inflation agent, an oracle-manipulation agent.
 
 Append one entry to `AGENTS` in `pipeline/agents.py`:
 
 ```python
 Agent(
-    name="cross-function-auth",
+    name="first-deposit-inflation",
     model=HARD,  # HARD / MIDDLE / SIMPLE — pick the tier that fits the job
-    focus="Hunt ONLY for cross-function authorization gaps: a function that acts on "
-          "a recipient/target argument but checks permissions or solvency on msg.sender; "
-          "state minted to A but validated against B. Ignore everything else.",
+    focus="Hunt ONLY for first-deposit / share-inflation bugs in vault-style contracts: "
+          "an attacker front-runs the first deposit and donates assets to skew the "
+          "share/asset ratio so later depositors round down to zero shares. "
+          "Ignore everything else.",
 )
 ```
 

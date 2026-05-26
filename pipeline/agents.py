@@ -47,6 +47,16 @@ AGENTS: list[Agent] = [
         ),
     ),
     Agent(
+        name="cross-function-auth",
+        model=HARD,  # cross-function reasoning: who is acted on vs who is checked
+        focus=(
+            "Hunt ONLY for cross-function authorization gaps: a function that acts on a "
+            "recipient/target argument (mints, credits, transfers, sets a balance/debt for `to`) "
+            "but validates permission or solvency on msg.sender instead — state applied to A "
+            "while checked against B. Ignore every other bug class. If there is none, return an empty list."
+        ),
+    ),
+    Agent(
         name="integer-overflow",
         model=SIMPLE,  # mostly a pattern scan — a small model is plenty
         focus=(
