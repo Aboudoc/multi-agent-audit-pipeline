@@ -9,8 +9,8 @@
 
 A tiny, readable **multi-agent Solidity audit pipeline**. An orchestrator fans an
 audit out across a few focused agents — each hunts one bug class — then merges and
-de-duplicates their findings. About 200 lines of Python. No magic: a loop, a few
-prompts, and a merge step.
+de-duplicates their findings. A few hundred lines of readable Python. No magic: a
+loop, a few prompts, and a merge step.
 
 It's a teaching scaffold, not a production auditor. The point is the *pattern* —
 fan out to specialists, then merge — which you can extend with your own agents,
@@ -65,6 +65,9 @@ plus a clean arithmetic path, so you can watch the overflow agent correctly find
 By default each agent uses its own model tier. Force one model for all of them
 with `AUDIT_MODEL=claude-haiku-4-5 python run.py examples/Vault.sol` (or `--model`).
 
+Output is a colored report with a live per-agent scan log (the scan log goes to stderr).
+For a clean file, pass `--markdown`: `python run.py examples/Vault.sol --markdown > report.md`.
+
 ## Add your own agent
 
 The four bundled agents (reentrancy, access-control, cross-function-auth, integer-overflow)
@@ -103,6 +106,7 @@ pipeline/
   agents.py             the agents (one focused prompt each) — your extension point
   llm.py                one Claude call per agent (the only file that hits the API)
   orchestrator.py       fan-out + merge/dedup
+  report.py             colored report + live scan log (pure ANSI, no deps)
   codebase.py           load .sol files into one blob
   models.py             Finding shape + the JSON schema agents must fill
 examples/Vault.sol      intentionally vulnerable demo contract

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Callable
 
 from .agents import AGENTS, Agent
 from .llm import MODEL_OVERRIDE, run_agent
@@ -13,33 +14,34 @@ def audit(
     codebase: str,
     model_override: str | None = None,
     agents: list[Agent] = AGENTS,
-    dry_run: bool = False,
     parallel: bool = True,
+    on_done: Callable[[Agent, list[Finding]], None] | None = None,
 ) -> list[Finding]:
     """Run every agent over the codebase and return merged, de-duplicated findings.
 
     Each agent uses its own model tier (agents.py) unless `model_override` (or the
-    AUDIT_MODEL env var) forces one model for all of them.
+    AUDIT_MODEL env var) forces one model for all of them. `on_done(agent, findings)`
+    is called as each agent finishes — used for the live scan log.
     """
     override = model_override or MODEL_OVERRIDE
-
-    if dry_run:
-        print(f"DRY RUN — would run {len(agents)} agents:")
-        for a in agents:
-            print(f"  • {a.name} [{override or a.model}]: {a.focus.split('.')[0]}.")
-        print(f"\nCodebase loaded: {len(codebase):,} chars.")
-        print("Set ANTHROPIC_API_KEY and drop --dry-run to run for real.")
-        return []
-
     raw: list[Finding] = []
+
     if parallel:
-        # Fan out. (The first call warms the prompt cache; the rest read it.)
+        # Fan out; report each agent as it finishes (completion order, no print races).
         with ThreadPoolExecutor(max_workers=len(agents)) as pool:
-            for findings in pool.map(lambda a: run_agent(a, codebase, override), agents):
+            futures = {pool.submit(run_agent, a, codebase, override): a for a in agents}
+            for fut in as_completed(futures):
+                agent = futures[fut]
+                findings = fut.result()
+                if on_done:
+                    on_done(agent, findings)
                 raw.extend(findings)
     else:
-        for a in agents:
-            raw.extend(run_agent(a, codebase, override))
+        for agent in agents:
+            findings = run_agent(agent, codebase, override)
+            if on_done:
+                on_done(agent, findings)
+            raw.extend(findings)
 
     return _merge(raw)
 
@@ -59,7 +61,6 @@ def _merge(findings: list[Finding]) -> list[Finding]:
         if key not in merged:
             merged[key] = f
         else:
-            # Same spot flagged by another agent — record the confirmation.
             existing = merged[key]
             if f.found_by and f.found_by not in existing.confirmed_by:
                 existing.confirmed_by.append(f.found_by)
