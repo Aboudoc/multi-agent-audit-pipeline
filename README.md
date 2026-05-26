@@ -4,7 +4,7 @@
 
 <!-- Real run of `python run.py examples/Vault.sol`. Swap for an animated GIF (asciinema -> agg / vhs) if you want motion. -->
 <p align="center">
-  <img src="docs/demo.png" alt="multi-agent-audit-pipeline — audit report on the example contract" width="760">
+  <img src="docs/report.png" alt="multi-agent-audit-pipeline — audit report on the example contract" width="760">
 </p>
 
 A tiny, readable **multi-agent Solidity audit pipeline**. An orchestrator fans an
