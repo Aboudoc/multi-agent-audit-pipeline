@@ -97,9 +97,10 @@ def render(findings: list[Finding], colors) -> str:
 
     w = _width()
     counts = Counter(f.severity for f in findings)
-    tally = "  ".join(
-        f"{_badge(s)} {counts[s]}" for s in ("high", "medium", "low", "info") if counts[s]
-    )
+    # Always show high / medium / low (even at 0); add info only when present.
+    tally = "  ".join(f"{_badge(s)} {counts[s]}" for s in ("high", "medium", "low"))
+    if counts["info"]:
+        tally += f"  {_badge('info')} {counts['info']}"
     n = len(findings)
 
     out = [
@@ -109,14 +110,24 @@ def render(findings: list[Finding], colors) -> str:
         "  " + _dim("━" * (w - 2)),
     ]
     for i, f in enumerate(findings, 1):
+        out.append("")
+        # Title — wrapped, continuations aligned under the title text.
+        num = f"{i}."
+        prefix = 2 + len(num) + 1 + (len(f.severity) + 2) + 2  # "  N. [SEV]  "
+        title = textwrap.wrap(f.title, width=max(24, w - prefix)) or [f.title]
+        out.append(f"  {_bold(num)} {_badge(f.severity)}  {_bold(title[0])}")
+        out.extend(" " * prefix + _bold(ln) for ln in title[1:])
+        # Location — wrapped (plain text).
+        for ln in textwrap.wrap(f"{f.contract} · {f.location}", width=w - 5) or [""]:
+            out.append("     " + ln)
+        # Attribution — its own short line (keeps a long location from running on).
         who = colors.get(f.found_by, lambda s: s)(f.found_by)
         if f.confirmed_by:
             who += _dim(" +" + ", ".join(f.confirmed_by))
-        out.append("")
-        out.append(f"  {_bold(f'{i}.')} {_badge(f.severity)}  {_bold(f.title)}")
-        out.append(f"     {f.contract} · {f.location}   {_dim('—')} {who}")
+        out.append(f"     {_dim('found by')} {who}")
+        # Why / fix — wrapped, hanging indent.
         for label, text in (("why", f.explanation), ("fix", f.recommendation)):
-            body = textwrap.fill(text, width=w - 9).split("\n")
+            body = textwrap.wrap(text, width=w - 10) or [""]
             out.append(f"     {_dim(label)}  {body[0]}")
             out.extend("          " + ln for ln in body[1:])
     out.append("")
