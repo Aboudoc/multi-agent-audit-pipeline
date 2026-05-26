@@ -19,6 +19,21 @@ tools, and a PoC step.
 > Companion code for the article *Build a multi-agent auditing pipeline*. If it
 > saves you ten minutes, a ⭐ helps it reach more hunters.
 
+## New to Python? The repo at a glance
+
+Not a Python regular? Here's the whole thing — each file does one small job:
+
+- **`run.py`** — entry point. `python run.py <path>` reads your args, loads the code, runs the agents, prints the report.
+- **`pipeline/`** — the package (`__init__.py` just marks the folder importable). Inside:
+  - **`agents.py`** — the agent roster: each agent is a name + a one-bug-class prompt + a model tier.
+  - **`codebase.py`** — loads the in-scope `.sol` files into one blob the agents read.
+  - **`llm.py`** — the only file that calls Claude (one call per agent).
+  - **`orchestrator.py`** — fans the agents out in parallel, then merges + de-dups their findings.
+  - **`models.py`** — the `Finding` shape + JSON schema, via **Pydantic** (a library that enforces every finding has the right fields and types).
+  - **`report.py`** — colors + the rendered report.
+
+**Flow:** `run.py` → `codebase.py` loads the code → `orchestrator.py` hands it to each agent in `agents.py` → each calls Claude via `llm.py` and returns structured `Finding`s (`models.py`) → merge → `report.py` prints.
+
 ## How it works
 
 ```
@@ -97,20 +112,6 @@ That's the extension point. The orchestrator picks it up automatically.
 - **More tools.** Give agents `grep`/static-analysis output, or prior-art lookup, so
   they reason over facts instead of just the source.
 - **Scoping.** Skip tests/mocks/`node_modules`; pin the commit you audited.
-
-## Layout
-
-```
-run.py                  CLI
-pipeline/
-  agents.py             the agents (one focused prompt each) — your extension point
-  llm.py                one Claude call per agent (the only file that hits the API)
-  orchestrator.py       fan-out + merge/dedup
-  report.py             colored report + live scan log (pure ANSI, no deps)
-  codebase.py           load .sol files into one blob
-  models.py             Finding shape + the JSON schema agents must fill
-examples/Vault.sol      intentionally vulnerable demo contract
-```
 
 ## License
 
