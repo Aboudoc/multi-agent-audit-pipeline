@@ -44,7 +44,7 @@ tools, and a PoC step.
 ## Run it in 2 minutes
 
 ```bash
-git clone https://github.com/<you>/multi-agent-audit-pipeline
+git clone https://github.com/Aboudoc/multi-agent-audit-pipeline
 cd multi-agent-audit-pipeline
 pip install -r requirements.txt
 
