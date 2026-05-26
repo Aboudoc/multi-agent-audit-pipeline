@@ -65,14 +65,20 @@ with `AUDIT_MODEL=claude-haiku-4-5 python run.py examples/Vault.sol` (or `--mode
 
 ## Add your own agent
 
+The three bundled agents (reentrancy, access-control, integer-overflow) are textbook on
+purpose — they teach the mechanics, not the edge. The leverage is in agents that encode
+*your* expertise, where a generalist prompt loses to you: an accounting-drift agent, a
+first-deposit-inflation agent, a cross-function-auth agent.
+
 Append one entry to `AGENTS` in `pipeline/agents.py`:
 
 ```python
 Agent(
-    name="oracle-manipulation",
+    name="cross-function-auth",
     model=HARD,  # HARD / MIDDLE / SIMPLE — pick the tier that fits the job
-    focus="Hunt ONLY for price-oracle manipulation: spot-price reads, "
-          "single-source feeds, missing TWAP/staleness checks. Ignore everything else.",
+    focus="Hunt ONLY for cross-function authorization gaps: a function that acts on "
+          "a recipient/target argument but checks permissions or solvency on msg.sender; "
+          "state minted to A but validated against B. Ignore everything else.",
 )
 ```
 

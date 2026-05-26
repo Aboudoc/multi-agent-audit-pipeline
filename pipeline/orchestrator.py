@@ -45,7 +45,14 @@ def audit(
 
 
 def _merge(findings: list[Finding]) -> list[Finding]:
-    """Collapse near-duplicate findings on the same spot; track multi-agent confirmation."""
+    """Collapse near-duplicate findings on the same spot; track multi-agent confirmation.
+
+    Caveat: the key is dumb — it dedups on (contract, location) as lowercased strings. Two
+    agents describing the same root cause in different words, or pinning slightly different
+    line ranges, will NOT merge. That's deliberate: over-merging silently hides bugs, and
+    eyeballing two near-duplicates beats losing one. A semantic merge (cluster by root cause)
+    is the obvious upgrade if you want it.
+    """
     merged: dict[tuple[str, str], Finding] = {}
     for f in findings:
         key = (f.contract.strip().lower(), f.location.strip().lower())
